@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!-- Synthetic fixture: a "redesigned" results page where the card markup is gone
+     and only schema.org JSON-LD is left. All data is invented. -->
+<html lang="de">
+<head><meta charset="utf-8">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "ItemList", "itemListElement": [
+  {"@type": "ListItem", "position": 1, "item": {
+    "@type": "Apartment", "name": "Altbau mit Flügeltüren",
+    "url": "https://www.immowelt.at/expose/0a1b2c3d-0000-4000-8000-0000000000aa",
+    "floorSize": {"@type": "QuantitativeValue", "value": 72},
+    "numberOfRooms": 3, "address": {"postalCode": "1090", "addressLocality": "Wien"},
+    "offers": {"@type": "Offer", "price": 1390}}},
+  {"@type": "ListItem", "position": 2, "item": {
+    "@type": "Apartment", "name": "Dachgeschoss mit Terrasse",
+    "url": "https://immobilien.derstandard.at/detail/90000055",
+    "floorSize": {"value": 88}, "numberOfRooms": 3,
+    "address": {"postalCode": "1180", "addressLocality": "Wien"},
+    "offers": {"@type": "Offer", "price": "2.150"}}}
+]}
+</script>
+</head>
+<body><div id="app"></div></body>
+</html>
