@@ -10,7 +10,14 @@ import re
 
 from ..config import Search
 from ..models import Listing
-from .base import clean_text, denoise, jsonld_listings, parse_decimal, parse_euro
+from .base import (
+    clean_text,
+    denoise,
+    jsonld_listings,
+    parse_decimal,
+    parse_euro,
+    short_title,
+)
 
 NAME = "derstandard"
 HOST = "immobilien.derstandard.at"
@@ -88,7 +95,7 @@ def _parse_card(card: str, deal: str, kind: str) -> Listing | None:
         source=NAME,
         source_id=source_id,
         url=f"{BASE_URL}/detail/{source_id}",
-        title=title[:200],
+        title=short_title(title),
         deal=deal,
         kind=kind,
         price=parse_euro(price_text),

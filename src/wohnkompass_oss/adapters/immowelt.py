@@ -11,7 +11,14 @@ import re
 
 from ..config import Search
 from ..models import Listing
-from .base import clean_text, denoise, jsonld_listings, parse_decimal, parse_euro
+from .base import (
+    clean_text,
+    denoise,
+    jsonld_listings,
+    parse_decimal,
+    parse_euro,
+    short_title,
+)
 
 NAME = "immowelt"
 HOST = "www.immowelt.at"
@@ -131,7 +138,7 @@ def _title(text: str, link_tag: str) -> str:
     """The ad's first sentence, else the card link's generic title."""
     first_sentence = _SENTENCE_END_RE.split(text, maxsplit=1)[0] if text else ""
     if sum(ch.isalpha() for ch in first_sentence) >= 10:
-        return first_sentence[:200]
+        return short_title(first_sentence)
     attr = _TITLE_ATTR_RE.search(link_tag)
     fallback = clean_text(attr.group(1)) if attr else ""
-    return (fallback or first_sentence or "Wohnung")[:200]
+    return short_title(fallback or first_sentence or "Wohnung")

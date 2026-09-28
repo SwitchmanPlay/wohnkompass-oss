@@ -89,3 +89,8 @@ def test_render_status():
     assert "HTTP 429" in text
     assert "42" in text
     assert "/resume" in text
+
+
+def test_net_rent_without_size_is_labelled_net():
+    text = render_alert(make_listing(price=1038.0, price_is_net=True, size_m2=None), "en")
+    assert "net €1,038" in text

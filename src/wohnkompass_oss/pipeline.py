@@ -81,12 +81,19 @@ async def run_cycle(
     adapters: Mapping[str, Adapter] | None = None,
     ai: Scorer | AIClient | None = None,
     now: float | None = None,
+    alert_on_first_run: bool = False,
 ) -> CycleReport:
+    """Check every enabled portal once.
+
+    The first successful fetch of a portal only fills the pool, so starting the
+    bot does not flood the chat with every listing currently online. Dry runs
+    pass ``alert_on_first_run=True`` to show what would match right now.
+    """
     now = time.time() if now is None else now
     adapters = adapters or {name: get_adapter(name) for name in settings.portals}
     ai = ai if settings.ai.enabled else None
     report = CycleReport()
-    context = _Cycle(settings, store, notifier, ai, now, report)
+    context = _Cycle(settings, store, notifier, ai, now, report, alert_on_first_run)
 
     for listing in store.pending_retries(MAX_SEND_ATTEMPTS):
         await context.deliver(listing, score=None, previous_price=None)
@@ -114,6 +121,7 @@ class _Cycle:
     ai: Scorer | None
     now: float
     report: CycleReport
+    alert_on_first_run: bool = False
 
     @property
     def lang(self) -> str:
@@ -126,7 +134,7 @@ class _Cycle:
             self.report.skipped.append(name)
             return
 
-        first_run = not store.has_rows(name)
+        first_run = not store.has_rows(name) and not self.alert_on_first_run
         listings: list[Listing] = []
         try:
             for kind in search.types:

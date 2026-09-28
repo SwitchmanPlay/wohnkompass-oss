@@ -289,3 +289,12 @@ async def test_old_listings_are_pruned(env):
     adapters["immowelt"].listings = [immowelt(source_id="new")]
     await cycle(now=40 * 86_400.0)
     assert store.get("immowelt:old") is None
+
+
+async def test_dry_run_can_alert_on_the_first_run(env):
+    store, adapters, _, notifier, _ = env
+    adapters["immowelt"].listings = [immowelt(source_id="1"), immowelt(source_id="2", price=9000.0)]
+    await run_cycle(
+        SETTINGS, store, FakeClient(), notifier, adapters=adapters, alert_on_first_run=True
+    )
+    assert [alert[0] for alert in notifier.alerts] == ["immowelt:1"]

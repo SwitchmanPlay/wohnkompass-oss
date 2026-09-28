@@ -51,6 +51,15 @@ def clean_text(text: str | None) -> str:
     return _WS_RE.sub(" ", _html.unescape(_TAG_RE.sub(" ", text))).strip()
 
 
+def short_title(text: str, limit: int = 100) -> str:
+    """At most ``limit`` characters, cut at a word boundary with an ellipsis."""
+    text = clean_text(text)
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:-–")
+    return cut + "…"
+
+
 def parse_euro(value: Any) -> float | None:
     """Austrian money strings: '€ 1.072,14', '1.100 €', '551.47 €'."""
     if value is None or isinstance(value, bool):
@@ -179,7 +188,7 @@ def jsonld_listings(
                 source=source,
                 source_id=id_match.group(1),
                 url=url,
-                title=clean_text(name)[:200],
+                title=short_title(name),
                 deal=deal,
                 kind=kind,
                 price=parse_euro(node.get("price") or offers.get("price")),

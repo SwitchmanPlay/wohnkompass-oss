@@ -87,3 +87,15 @@ def test_jsonld_listings():
 
 def test_jsonld_listings_without_data():
     assert base.jsonld_listings("<html></html>", "x", "https://x", r"/(\d+)", "rent", "flat") == []
+
+
+def test_short_title_cuts_at_a_word():
+    long = (
+        "Das hochwertige Neubauprojekt umfasst sieben Wohnungen und bietet unterschiedliche "
+        "Wohnkonzepte für Singles, Paare und kleine Familien."
+    )
+    title = base.short_title(long)
+    assert len(title) <= 101
+    assert title.endswith("…")
+    assert title.startswith("Das hochwertige Neubauprojekt")
+    assert base.short_title("Kurzer Titel") == "Kurzer Titel"

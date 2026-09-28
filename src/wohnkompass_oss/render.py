@@ -58,6 +58,8 @@ def render_alert(
     elif listing.price_is_estimate and listing.size_m2:
         net = format_eur(listing.price, lang)
         facts.append(f"≈ {price} ({t(lang, 'net', price=net)})")
+    elif listing.price_is_estimate:
+        facts.append(t(lang, "net", price=price))
     else:
         facts.append(price)
     if listing.size_m2:
