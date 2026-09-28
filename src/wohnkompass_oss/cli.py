@@ -92,14 +92,7 @@ async def _once(settings: Settings, dry_run: bool) -> int:
     client, ai = _clients(settings)
     try:
         if dry_run:
-            with tempfile.TemporaryDirectory() as tmp:
-                store = Store(Path(tmp) / "dry-run.sqlite3")
-                try:
-                    report = await run_cycle(
-                        settings, store, client, ConsoleNotifier(), ai=ai, alert_on_first_run=True
-                    )
-                finally:
-                    store.close()
+            report = await _dry_run(settings, client, ai)
         else:
             from telegram import Bot
 
@@ -124,6 +117,34 @@ async def _once(settings: Settings, dry_run: bool) -> int:
         file=sys.stderr,
     )
     return 0
+
+
+async def _dry_run(settings: Settings, client: PoliteClient, ai: AIClient | None):
+    """Print current matches using a throwaway pool.
+
+    Portal pauses are shared with the real database in both directions, so a
+    dry run never hits a portal that blocked us, and a new block is remembered.
+    """
+    real = Store(settings.db_path)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            scratch = Store(Path(tmp) / "dry-run.sqlite3")
+            try:
+                for name in settings.portals:
+                    state = real.portal_state(name)
+                    if state.paused_until:
+                        scratch.set_pause(name, state.paused_until, state.strikes, state.reason)
+                report = await run_cycle(
+                    settings, scratch, client, ConsoleNotifier(), ai=ai, alert_on_first_run=True
+                )
+                for name in report.blocked:
+                    state = scratch.portal_state(name)
+                    real.set_pause(name, state.paused_until, state.strikes, state.reason)
+            finally:
+                scratch.close()
+    finally:
+        real.close()
+    return report
 
 
 def _run(settings: Settings) -> int:

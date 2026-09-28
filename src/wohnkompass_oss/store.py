@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS portals (
     reason        TEXT NOT NULL DEFAULT '',
     empty_streak  INTEGER NOT NULL DEFAULT 0,
     last_run      REAL,
-    last_count    INTEGER
+    last_count    INTEGER,
+    search_key    TEXT
 );
 """
 
@@ -55,6 +56,7 @@ class PortalState:
     empty_streak: int = 0
     last_run: float | None = None
     last_count: int | None = None
+    search_key: str | None = None
 
 
 class Store:
@@ -181,6 +183,7 @@ class Store:
             empty_streak=row["empty_streak"],
             last_run=row["last_run"],
             last_count=row["last_count"],
+            search_key=row["search_key"],
         )
 
     def set_pause(self, source: str, until: float, strikes: int, reason: str = "") -> None:
@@ -199,6 +202,9 @@ class Store:
 
     def set_last_run(self, source: str, now: float, count: int) -> None:
         self._update_portal(source, last_run=now, last_count=count)
+
+    def set_search_key(self, source: str, key: str) -> None:
+        self._update_portal(source, search_key=key)
 
     def _update_portal(self, source: str, **fields: object) -> None:
         columns = ", ".join(f"{key} = ?" for key in fields)

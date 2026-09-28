@@ -24,7 +24,7 @@ class FakeAdapter:
         self.listings: list = []
 
     def build_url(self, search, kind):
-        return f"https://{self.host}/{search.deal}/{kind}"
+        return f"https://{self.host}/{search.city}/{search.deal}/{kind}"
 
     def parse(self, html, deal, kind):
         return list(self.listings)
@@ -121,10 +121,10 @@ async def test_one_request_per_kind_and_portal(env):
     settings = replace(SETTINGS, search=replace(SETTINGS.search, types=("flat", "house")))
     await cycle(settings=settings)
     assert sorted(client.urls) == [
-        "https://derstandard.test/rent/flat",
-        "https://derstandard.test/rent/house",
-        "https://immowelt.test/rent/flat",
-        "https://immowelt.test/rent/house",
+        "https://derstandard.test/wien/rent/flat",
+        "https://derstandard.test/wien/rent/house",
+        "https://immowelt.test/wien/rent/flat",
+        "https://immowelt.test/wien/rent/house",
     ]
 
 
@@ -298,3 +298,32 @@ async def test_dry_run_can_alert_on_the_first_run(env):
         SETTINGS, store, FakeClient(), notifier, adapters=adapters, alert_on_first_run=True
     )
     assert [alert[0] for alert in notifier.alerts] == ["immowelt:1"]
+
+
+class ExplodingAdapter(FakeAdapter):
+    def parse(self, html, deal, kind):
+        raise TypeError("unexpected markup")
+
+
+async def test_unexpected_error_in_one_portal_does_not_stop_the_other(env):
+    store, adapters, _, notifier, cycle = env
+    adapters["immowelt"] = ExplodingAdapter("immowelt")
+    adapters["derstandard"].listings = [derstandard(source_id="1")]
+    for index in range(EMPTY_ALERT_AFTER):
+        report = await cycle(now=float(index))
+    assert store.has_rows("derstandard")
+    assert report.errors and report.errors[0].startswith("immowelt: ")
+    assert sum("no listings" in text for text in notifier.texts) == 1
+
+
+async def test_changing_the_search_does_not_flood_the_chat(env):
+    _, adapters, _, notifier, cycle = env
+    adapters["immowelt"].listings = [immowelt(source_id="1")]
+    await cycle()
+    graz = replace(SETTINGS, search=replace(SETTINGS.search, city="graz"))
+    adapters["immowelt"].listings = [immowelt(source_id="2"), immowelt(source_id="3")]
+    await cycle(settings=graz)
+    assert notifier.alerts == []
+    adapters["immowelt"].listings = [immowelt(source_id="4")]
+    await cycle(settings=graz)
+    assert [alert[0] for alert in notifier.alerts] == ["immowelt:4"]

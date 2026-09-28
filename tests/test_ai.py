@@ -118,9 +118,9 @@ def test_letter_prompt_uses_profile_and_language():
 # Letter clean-up
 # --------------------------------------------------------------------------
 def test_clean_letter_strips_links_and_phone_numbers():
-    text = LETTER + " Rufen Sie mich an: +43 660 1234567 oder https://evil.example/x"
+    text = LETTER + " Rufen Sie mich an: +43 000 0000000 oder https://evil.example/x"
     cleaned = clean_letter(text)
-    assert "1234567" not in cleaned
+    assert "0000000" not in cleaned
     assert "https://" not in cleaned
 
 

@@ -167,6 +167,13 @@ def _ld_images(value: Any) -> tuple[str, ...]:
     return tuple(dict.fromkeys(urls))[:10]
 
 
+def _text_or_none(value: Any) -> str | None:
+    """schema.org values may be numbers (\"postalCode\": 1070); normalise to text."""
+    if value is None or isinstance(value, dict | list):
+        return None
+    return clean_text(str(value)) or None
+
+
 def jsonld_listings(
     html: str, source: str, base_url: str, id_pattern: str, deal: str, kind: str
 ) -> list[Listing]:
@@ -194,8 +201,9 @@ def jsonld_listings(
                 price=parse_euro(node.get("price") or offers.get("price")),
                 size_m2=parse_decimal(_ld_value(node.get("floorSize"))),
                 rooms=parse_decimal(_ld_value(node.get("numberOfRooms"))),
-                postcode=address.get("postalCode") or postcode_from_text(name, description),
-                address=clean_text(address.get("streetAddress") or "") or None,
+                postcode=_text_or_none(address.get("postalCode"))
+                or postcode_from_text(name, description),
+                address=_text_or_none(address.get("streetAddress")),
                 description=description[:1000],
                 photos=_ld_images(node.get("image")),
             )

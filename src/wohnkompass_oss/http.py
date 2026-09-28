@@ -123,7 +123,7 @@ class PoliteClient:
             await self._wait_for(host)
             try:
                 response = await self._client.get(url)
-            except httpx.TransportError as exc:
+            except httpx.HTTPError as exc:
                 error: Exception = exc
             else:
                 reason = looks_like_challenge(response.status_code, response.text)

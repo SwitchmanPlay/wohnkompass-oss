@@ -68,5 +68,39 @@ def test_once_dry_run_prints_matches(config, capsys, monkeypatch):
     out = capsys.readouterr().out
     assert "Helle Altbauwohnung nahe der U3." in out
     assert "Sonnige 3-Zimmer-Wohnung mit 8m² Balkon" in out
-    # A dry run never touches the real database.
-    assert not (config.parent / "wohnkompass.sqlite3").exists()
+    # A dry run never adds listings to the real database.
+    from wohnkompass_oss.store import Store
+
+    real = Store(config.parent / "wohnkompass.sqlite3")
+    assert real.count() == 0
+    real.close()
+
+
+def test_dry_run_respects_and_keeps_real_pauses(config, capsys, monkeypatch):
+    from wohnkompass_oss.store import Store
+
+    real = Store(config.parent / "wohnkompass.sqlite3")
+    real.set_pause("immowelt", until=9e12, strikes=1, reason="HTTP 429")
+    real.close()
+    client = FixtureClient()
+    monkeypatch.setattr(cli, "PoliteClient", lambda *a, **k: client)
+    assert cli.main(["--config", str(config), "once", "--dry-run"]) == 0
+    assert not any("immowelt" in url for url in client.urls)
+
+
+def test_dry_run_saves_a_new_block(config, monkeypatch):
+    from wohnkompass_oss.http import Blocked
+    from wohnkompass_oss.store import Store
+
+    class BlockingClient(FixtureClient):
+        async def get(self, url):
+            if "immowelt" in url:
+                raise Blocked("www.immowelt.at", "HTTP 403")
+            return await super().get(url)
+
+    monkeypatch.setattr(cli, "PoliteClient", BlockingClient)
+    assert cli.main(["--config", str(config), "once", "--dry-run"]) == 0
+    real = Store(config.parent / "wohnkompass.sqlite3")
+    assert real.portal_state("immowelt").strikes == 1
+    assert not real.has_rows("derstandard")  # listings stay out of the real pool
+    real.close()

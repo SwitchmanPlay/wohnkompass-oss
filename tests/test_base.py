@@ -99,3 +99,13 @@ def test_short_title_cuts_at_a_word():
     assert title.endswith("…")
     assert title.startswith("Das hochwertige Neubauprojekt")
     assert base.short_title("Kurzer Titel") == "Kurzer Titel"
+
+
+def test_jsonld_numeric_postcode_and_street():
+    page = (
+        '<script type="application/ld+json">{"@type": "Apartment", "name": "Wohnung am Park",'
+        ' "url": "/detail/5", "address": {"postalCode": 1070, "streetAddress": 12}}</script>'
+    )
+    [listing] = base.jsonld_listings(page, "x", "https://x.test", r"/detail/(\d+)", "rent", "flat")
+    assert listing.postcode == "1070"
+    assert listing.address == "12"

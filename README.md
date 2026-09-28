@@ -76,8 +76,8 @@ immowelt · also on derStandard
 - **Optional AI** through any OpenAI-compatible endpoint (OpenRouter, OpenAI, a local
   Ollama or LM Studio): a 1–10 score with a one-line reason, optional photo scoring, and
   a **Draft letter** button that writes an application from your short profile.
-- **No flood on day one.** The first check only learns what is already online; from then
-  on you get new listings only.
+- **No flood on day one.** The first check, and the first check after you change the
+  search, only learns what is already online; from then on you get new listings only.
 - **Honest failure.** A blocked portal is paused and you are told; a portal that suddenly
   returns nothing ("the layout changed") triggers a warning instead of silence.
 
@@ -149,7 +149,8 @@ cp search.example.toml search.toml    # your city, budget, size, rooms, postcode
 wohnkompass-oss check-config
 ```
 
-**4. See what matches right now** without Telegram and without touching the database:
+**4. See what matches right now**, printed to the console instead of Telegram (nothing is
+added to your database; portal pauses are still respected):
 
 ```bash
 wohnkompass-oss once --dry-run
@@ -219,7 +220,7 @@ The portals give this data to people for free, so the tool asks for as little as
 | Rule | Value |
 |---|---|
 | Requests per check | **one results page per portal** (two if you watch flats *and* houses) |
-| Time between checks | **≥ 15 min**, default 20, with random jitter |
+| Time between scheduled checks | **≥ 15 min**, default 20, with random jitter (`/check` runs one on demand) |
 | Time between requests to one site | **≥ 10 s** plus up to 5 s jitter |
 | On HTTP 403 / 429, a captcha or a bot-check page | **stop**: pause that portal 30 min, doubling up to 24 h (longer if `Retry-After` says so); the pause survives restarts and you get a message |
 | Server errors, timeouts | one retry after 30 s, then wait for the next check |

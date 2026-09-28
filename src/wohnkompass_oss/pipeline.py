@@ -99,7 +99,11 @@ async def run_cycle(
         await context.deliver(listing, score=None, previous_price=None)
 
     for name in settings.portals:
-        await context.run_portal(name, adapters[name], client)
+        try:
+            await context.run_portal(name, adapters[name], client)
+        except Exception as error:
+            log.exception("%s: unexpected error", name)
+            report.errors.append(f"{name}: {error!r}")
 
     store.prune(now, POOL_RETENTION_DAYS)
     log.info(
@@ -134,12 +138,16 @@ class _Cycle:
             self.report.skipped.append(name)
             return
 
-        first_run = not store.has_rows(name) and not self.alert_on_first_run
+        urls = [(kind, adapter.build_url(search, kind)) for kind in search.types]
+        # A new search (other city, deal or types) starts quiet, like the very first run.
+        search_key = " ".join(url for _, url in urls)
+        first_run = not self.alert_on_first_run and (
+            not store.has_rows(name) or state.search_key != search_key
+        )
         listings: list[Listing] = []
         try:
-            for kind in search.types:
-                html = await client.get(adapter.build_url(search, kind))
-                listings += adapter.parse(html, search.deal, kind)
+            for kind, url in urls:
+                listings += adapter.parse(await client.get(url), search.deal, kind)
         except Blocked as blocked:
             await self._pause(name, state.strikes + 1, blocked)
             return
@@ -147,19 +155,20 @@ class _Cycle:
             log.warning("%s: %s", name, error)
             self.report.errors.append(f"{name}: {error}")
             return
+        except Exception as error:
+            log.exception("%s: could not parse the results page", name)
+            self.report.errors.append(f"{name}: {error!r}")
+            await self._empty(name)
+            return
 
         if state.strikes:
             store.clear_pause(name)
         store.set_last_run(name, self.now, len(listings))
         if not listings:
-            streak = store.record_empty(name)
-            log.warning("%s: no listings on the results page (%d in a row)", name, streak)
-            if streak == EMPTY_ALERT_AFTER:
-                await self._text(
-                    t(self.lang, "parser_broken", portal=portal_name(name), count=streak)
-                )
+            await self._empty(name)
             return
         store.reset_empty(name)
+        store.set_search_key(name, search_key)
 
         for listing in listings:
             reason = implausible(listing)
@@ -172,6 +181,12 @@ class _Cycle:
                 self.report.new += 1
             if not first_run:
                 await self._consider(listing, change)
+
+    async def _empty(self, name: str) -> None:
+        streak = self.store.record_empty(name)
+        log.warning("%s: no listings on the results page (%d in a row)", name, streak)
+        if streak == EMPTY_ALERT_AFTER:
+            await self._text(t(self.lang, "parser_broken", portal=portal_name(name), count=streak))
 
     async def _consider(self, listing: Listing, change: Change) -> None:
         store = self.store
