@@ -1,0 +1,27 @@
+# Copy to search.toml and adjust. Secrets (tokens, keys) go in .env, never here.
+
+language = "en"            # "en" or "de": alerts and letters
+poll_minutes = 20          # minimum 15; a random ±20 % is added
+portals = ["immowelt", "derstandard"]
+database = "wohnkompass.sqlite3"
+
+[search]
+city = "wien"              # wien | graz | linz | salzburg
+deal = "rent"              # rent | buy
+types = ["flat"]           # flat | house
+postcodes = []             # e.g. ["1020", "1030", "1070"]; empty = whole city
+price_min = 0
+price_max = 1200           # warm rent (or purchase price when deal = "buy")
+size_min = 45              # m²
+rooms_min = 2
+exclude_red_flags = []     # befristet | abloese | provision | wohnticket
+
+[ai]
+enabled = false            # needs AI_BASE_URL, AI_API_KEY, AI_MODEL in .env
+min_score = 6              # 1-10; lower-scored listings are not sent
+photos = false             # also send up to 3 listing photos (needs a vision model)
+
+[profile]                  # only used by the "Draft letter" button
+name = ""                  # how the letter is signed; empty = no signature
+about = "Software developer, non-smoker, no pets, permanent job in Vienna."
+move_in = "from November"

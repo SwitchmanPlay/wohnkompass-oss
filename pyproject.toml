@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wohnkompass-oss"
+version = "0.1.0"
+description = "Single-user Telegram alerts for new flats on Austrian property portals — the open-source edition of WohnKompass."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Danylo Prokhorenko" }]
+keywords = ["telegram-bot", "real-estate", "austria", "vienna", "scraper", "wohnung"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Topic :: Communications :: Chat",
+]
+dependencies = [
+    "httpx>=0.27,<1",
+    "python-telegram-bot[job-queue]>=21,<22",
+    "python-dotenv>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+wohnkompass-oss = "wohnkompass_oss.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/SwitchmanPlay/wohnkompass-oss"
+"Full product" = "https://t.me/wohnkompass_bot"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wohnkompass_oss"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
